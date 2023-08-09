@@ -70,3 +70,24 @@ the result
  join [Danny's Diner].dbo.menu m
  ON  s.product_id = m.product_id ;
 ```
+the result 
+| customer_id|product_name|
+|-----:|-------------------|
+| A	         | curry       |
+| B	         |curry        |
+| C	         | ramen       |
+
+ 4. 
+ SELECT customer_id, m.product_name, count(m.product_name) times_of_purchased
+ FROM [Danny's Diner].dbo.sales s
+ JOIN [Danny's Diner].dbo.menu m
+ ON  s.product_id = m.product_id
+ JOIN  (SELECT top 1 product_name, count(*) count_item
+ FROM [Danny's Diner].dbo.sales s
+ JOIN [Danny's Diner].dbo.menu  m
+ ON  s.product_id = m.product_id
+ GROUP BY  product_name
+ order by count_item desc) sub
+ ON  m.product_name = sub.product_name
+  GROUP BY customer_id, m.product_name ;
+
