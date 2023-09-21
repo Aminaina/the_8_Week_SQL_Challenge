@@ -141,7 +141,7 @@ FROM temporar_runner_orders;
 
 #### Answers to Pizza Metrics Questions
 
-**1. How many pizzas were ordered?**
+# Question 1: How many pizzas were ordered?**
 ```sql
 SELECT COUNT(order_id) pizza_numbers
 FROM [Pizza Runner].[dbo].customer_orders;
@@ -149,7 +149,7 @@ FROM [Pizza Runner].[dbo].customer_orders;
 | pizza_numbers | 
 |---------------| 
 | 14            |   
-## 2. How many unique customer orders were made?
+### Question 2: How many unique customer orders were made?
 ```sql
 SELECT COUNT(DISTINCT order_id) uniq_customer_order
 FROM [Pizza Runner].[dbo].customer_orders;
@@ -300,6 +300,207 @@ result 10:
 | Monday     | 5              |
 | Saturday   | 3              |
 | Sunday     | 1              |
+
+## B. Runner and Customer Experience
+
+### Question 1: How many runners signed up for each 1-week period?
+
+```sql
+SELECT  DATENAME(week, registration_date) AS registration_week, COUNT(runner_id) AS signed_up_each_week
+FROM [Pizza Runner].[dbo].runners
+GROUP BY DATENAME(week, registration_date);
+```
+result1:
+| registration_week | signed_up_each_week|
+|------------|----------------|
+| 1     | 1             |
+| 2   | 2             |
+|3  | 1            |
+
+### Question 2:  What was the average time in minutes it took for each runner to arrive at the Pizza Runner HQ to pick up the order?
+```sql
+SELECT runner_id, AVG(DATEDIFF(minute, order_time, pickup_time)) AS average_time
+FROM temporar_runner_orders t
+JOIN [Pizza Runner].[dbo].customer_orders c
+ON t.order_id = c.order_id
+WHERE cancellation = 'no_cancellation' 
+GROUP BY runner_id;
+```
+result 2:
+| runner_id | average_time|
+|------------|----------------|
+| 1     | 15            |
+| 2   | 24             |
+|3  | 10            |
+
+### Question 3: Is there any relationship between the number of pizzas and how long the order takes to prepare?
+```sql
+WITH number_pizza AS (
+    SELECT count(t.order_id) AS n_pizza, order_time, pickup_time
+    FROM temporar_runner_orders t
+    JOIN [Pizza Runner].[dbo].customer_orders c
+    ON t.order_id = c.order_id
+    WHERE cancellation = 'no_cancellation' 
+    GROUP BY order_time, pickup_time
+)
+SELECT n_pizza, AVG(DATEDIFF(minute, c.order_time, t.pickup_time)) AS avg_prep_time_min
+FROM temporar_runner_orders t
+JOIN [Pizza Runner].[dbo].customer_orders c
+ON t.order_id = c.order_id
+JOIN number_pizza n
+ON n.order_time = c.order_time
+WHERE cancellation = 'no_cancellation' 
+GROUP BY n_pizza;
+
+```
+result 3:
+| n_pizza | avg_prep_time_min|
+|------------|----------------|
+| 1     | 14            |
+| 2   | 16             |
+|3  |30            |
+### Question 4:  What was the average distance traveled for each customer?
+```sql
+SELECT customer_id, 
+       CAST(AVG(CONVERT(DECIMAL(10, 2), distance)) AS DECIMAL(10, 2)) AS average_distance
+FROM temporar_runner_orders t
+JOIN [Pizza Runner].[dbo].customer_orders c
+ON t.order_id = c.order_id
+GROUP BY c.customer_id;
+
+```
+result 4:
+| customer_id | average_distance|      
+|------------|----------------|
+| 101     | 13.33           |
+| 102   |   16.73            |
+|103  |17.55           |
+| 104   | 10.00            |
+|105  |25.00           |
+
+### Question 5: What was the difference between the longest and shortest delivery times for all orders?
+```sql
+SELECT CONVERT(int, MAX(duration)) - CONVERT(int, MIN(duration)) AS difference_longest_shortest_delivery_times
+FROM temporar_runner_orders 
+WHERE cancellation = 'no_cancellation';
+
+```
+result 5:
+| difference_longest_shortest_delivery_times|
+|30| 
+
+### Question 6: What was the average speed for each runner for each delivery, and do you notice any trend for these values?
+```sql
+SELECT order_id, runner_id, ROUND((CONVERT(float, distance) / (CONVERT(float, duration) / 60)), 2) AS speed_km_min
+FROM temporar_runner_orders 
+WHERE cancellation = 'no_cancellation';
+
+```
+result6:
+|order_id | runner_id|speed_km_min|
+|1|	1	|37.5|
+|2	|1	|44.44|
+|3	|1	|40.2|
+|4	|2	|35.1|
+|5	|3	|40|
+|7	|2	|60|
+|8	|2	|93.6|
+10	1	60
+### Question 7:  What is the successful delivery percentage for each runner?
+```sql
+WITH cont AS (
+    SELECT DISTINCT runner_id, 
+           ROW_NUMBER() OVER(PARTITION BY runner_id, cancellation ORDER BY (SELECT 0)) AS count_delivery, 
+           COUNT(runner_id) OVER(PARTITION BY runner_id ORDER BY (SELECT 0)) AS count_idrunner
+    FROM temporar_runner_orders
+)
+SELECT DISTINCT runner_id, (MAX(count_delivery) OVER (PARTITION BY runner_id)) / CONVERT(float, count_idrunner) * 100 AS successful_delivery_percentage
+FROM cont;
+
+```
+result7:
+|  runner_id |successful_delivery_percentage|
+|------------|----------------|
+| 1     | 100            |
+| 2   | 75             |
+|3  |50            |
+
+##  C. Ingredient Optimization
+### Question 1:  What are the standard ingredients for each pizza?
+```sql
+-- Split topping_id from toppings
+WITH splt_toppings AS (
+    SELECT pizza_id, value toppings
+    FROM [Pizza Runner].[dbo].pizza_recipes
+    CROSS APPLY STRING_SPLIT(toppings, ',')
+)
+SELECT pizza_id, STRING_AGG(topping_name, ', ') AS standard_ingredients 
+FROM pizza_toppings p
+JOIN splt_toppings s
+ON p.topping_id = s.toppings
+GROUP BY pizza_id;
+
+```
+### Question 2:  What was the most commonly added extra?
+```sql
+WITH commonly_add AS (
+    SELECT value AS extras_separate
+    FROM [Pizza Runner].[dbo].customer_orders
+    CROSS APPLY STRING_SPLIT(extras, ',')
+    WHERE extras <> 'n_ext'
+),
+mode_extras AS (
+    SELECT extras_separate, ROW_NUMBER() OVER(PARTITION BY extras_separate ORDER BY (SELECT 0)) AS num_extras
+    FROM commonly_add
+)
+SELECT topping_name AS most_commonly_added_extra
+FROM mode_extras m
+JOIN pizza_toppings p
+ON m.extras_separate = p.topping_id
+WHERE num_extras = (SELECT MAX(num_extras) FROM mode_extras);
+
+```
+### Question 3:   What was the most common exclusion?
+```sql
+WITH commonly_add AS (
+    SELECT value AS exclusions_separate
+    FROM [Pizza Runner].[dbo].customer_orders
+    CROSS APPLY STRING_SPLIT(exclusions, ',')
+    WHERE exclusions <> 'n_ex'
+),
+mode_exclusions AS (
+    SELECT exclusions_separate, ROW_NUMBER() OVER(PARTITION BY exclusions_separate ORDER BY (SELECT 0)) AS num_exclusions
+    FROM commonly_add
+)
+SELECT topping_name AS most_commonly_added_exclusions
+FROM mode_exclusions m
+JOIN pizza_toppings p
+ON m.exclusions_separate = p.topping_id
+WHERE num_exclusions = (SELECT MAX(num_exclusions) FROM mode_exclusions);
+
+```
+### Question 4:   Format orders in the customers_orders table
+```sql
+SELECT *,
+  IIF(pizza_id = 1, CONCAT(
+    'Meat Lovers',
+    CASE
+      WHEN exclusions = '3' THEN ' - Exclude Beef'
+      ELSE ''
+    END,
+    CASE
+      WHEN extras = '1' THEN ' - Extra Bacon'
+      ELSE ''
+    END,
+    CASE
+      WHEN exclusions = '4,1' AND extras = '6,9' THEN ' - Exclude Cheese, Bacon - Extra Mushroom, Peppers'
+      ELSE ''
+    END)
+  ,'Vegetarian') AS OrderItem
+FROM [Pizza Runner].[dbo].customer_orders;
+
+```
+
 
 
 
