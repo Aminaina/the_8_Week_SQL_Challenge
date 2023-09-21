@@ -441,6 +441,12 @@ ON p.topping_id = s.toppings
 GROUP BY pizza_id;
 
 ```
+result1:
+| pizza_id | standard_ingredients                                      |
+|----------|----------------------------------------------------------|
+| 1        | Bacon, BBQ Sauce, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami |
+| 2        | Cheese, Mushrooms, Onions, Peppers, Tomatoes, Tomato Sauce |
+
 ### Question 2:  What was the most commonly added extra?
 ```sql
 WITH commonly_add AS (
@@ -460,6 +466,7 @@ ON m.extras_separate = p.topping_id
 WHERE num_extras = (SELECT MAX(num_extras) FROM mode_extras);
 
 ```
+
 ### Question 3:   What was the most common exclusion?
 ```sql
 WITH commonly_add AS (
@@ -479,6 +486,12 @@ ON m.exclusions_separate = p.topping_id
 WHERE num_exclusions = (SELECT MAX(num_exclusions) FROM mode_exclusions);
 
 ```
+result 3:
+|most_commonly_added_exclusions|
+|----------| 
+| Cheese       |
+
+
 ### Question 4:   Format orders in the customers_orders table
 ```sql
 SELECT *,
@@ -500,6 +513,23 @@ SELECT *,
 FROM [Pizza Runner].[dbo].customer_orders;
 
 ```
+| order_id | customer_id | pizza_id | exclusions | extras | ordertime                | OrderItem    |
+|----------|-------------|----------|------------|--------|--------------------------|--------------|
+| 1        | 101         | 1        | n_ex       | n_xt   | 2021-01-01 18:05:02.000  | Meat Lovers  |
+| 2        | 101         | 1        | n_ex       | n_xt   | 2021-01-01 19:00:52.000  | Meat Lovers  |
+| 3        | 102         | 1        | n_ex       | n_xt   | 2021-01-02 23:51:02.000  | Meat Lovers  |
+| 3        | 102         | 2        | n_ex       | n_xt   | 2021-01-02 23:51:23.000  | Vegetarian   |
+| 4        | 103         | 1        | 4          | n_xt   | 2021-01-04 13:23:46.000  | Meat Lovers  |
+| 4        | 103         | 1        | 4          | n_xt   | 2021-01-04 13:23:46.000  | Meat Lovers  |
+| 4        | 103         | 2        | 4          | n_xt   | 2021-01-04 13:23:46.000  | Vegetarian   |
+| 5        | 104         | 1        | n_ex       | B      | 2021-01-08 21:00:29.000  | Meat Lovers  |
+| 6        | 101         | 2        | n_ex       | n_xt   | 2021-01-08 21:03:13.000  | Vegetarian   |
+| 7        | 105         | 2        | n_ex       | B      | 2021-01-08 21:20:29.000  | Vegetarian   |
+| 8        | 102         | 1        | n_ex       | n_xt   | 2021-01-09 23:54:33.000  | Meat Lovers  |
+| 9        | 103         | 1        | 4          | Baco   | 2021-01-10 11:22:59.000  | Meat Lovers  |
+| 10       | 104         | 1        | n_ex       | n_xt   | 2021-01-11 18:34:49.000  | Meat Lovers  |
+| 10       | 104         | 1        | 2, 6       | Baco   | 2021-01-11 18:34:49.000  | Meat Lovers  |
+
 
 
 
