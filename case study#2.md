@@ -141,7 +141,7 @@ FROM temporar_runner_orders;
 
 #### Answers to Pizza Metrics Questions
 
-# Question 1: How many pizzas were ordered?**
+### Question 1: How many pizzas were ordered?
 ```sql
 SELECT COUNT(order_id) pizza_numbers
 FROM [Pizza Runner].[dbo].customer_orders;
