@@ -36,20 +36,198 @@ Here are some example rows from the dataset:
 In a single query, perform the following data cleansing operations and create a new table called `clean_weekly_sales`:
 
 - Convert `week_date` to DATE format.
+
+```sql
+ -- Step 1: Create the new table 'weekly_sales_copy' with the same schema as 'weekly_sales'
+
+CREATE TABLE [weekly_sales_copy ]
+(
+    -- List all the columns and their data types here, as per the schema of 'weekly_sales'
+    "week_date" VARCHAR(7),
+  "region" VARCHAR(13),
+  "platform" VARCHAR(7),
+  "segment" VARCHAR(4),
+  "customer_type" VARCHAR(8),
+  "transactions" INTEGER,
+  "sales" INTEGER
+);
+ 
+-- Step 2: Insert data from 'weekly_sales' into 'clean_weekly_sales'
+INSERT INTO weekly_sales_copy
+SELECT *
+FROM  [data_mart].[dbo].weekly_sales;
+/** change data type of week)date fron varchar(7) tovarchar(10)  let me to convert string to date**/
+ALTER TABLE weekly_sales_copy
+ALTER COLUMN week_date varchar(20);
+
+SELECT CONVERT(date, week_date, 3)
+FROM   weekly_sales_copy;
+/*  Convert the week_date to a DATE format */
+update  [weekly_sales_copy]
+Set week_date = CONVERT(date, week_date, 3);
+```
 - Add a `week_number` column.
+  ```sql
+  alter table [weekly_sales_copy]
+  add  week_number int ;
+  update [weekly_sales_copy]
+  set week_number = DATEPART(week, week_date)
+  ```
 - Add a `month_number` column.
+```sql
+  alter table [weekly_sales_copy]
+  add  month_number int ;
+  update [weekly_sales_copy]
+  set month_number = DATEPART(MONTH, week_date)
+```
 - Add a `calendar_year` column.
+```sql
+  alter table [weekly_sales_copy]
+  add  year_number int ;
+  update [weekly_sales_copy]
+  set year_number = DATEPART(YEAR, week_date)
+```
 - Add an `age_band` column.
+```sql
+ ALTER TABLE [weekly_sales_copy]
+ ADD age_band varchar(15);
+ UPDATE [weekly_sales_copy]
+  SET age_band = CASE 
+    WHEN RIGHT(segment, 1) IN ('3', '4') THEN 'Retirees' 
+    WHEN RIGHT(segment, 1) = '2' THEN 'Middle Aged'
+    WHEN RIGHT(segment, 1) = '1' THEN 'Young Adults'
+    ELSE NULL  
+ END;
+```
 - Add a `demographic` column.
+```sql
+  ALTER TABLE [weekly_sales_copy]
+  ADD demographic varchar(15);
+  UPDATE [weekly_sales_copy]
+  SET demographic = CASE 
+    WHEN LEFT(segment, 1) = 'C' THEN 'Couples' 
+    WHEN LEFT(segment, 1) = 'F' THEN 'Families'
+
+    ELSE NULL 
+  END;
+```
 - Ensure null values are handled appropriately.
+```sql
+ ALTER TABLE weekly_sales_copy
+ ALTER COLUMN segment varchar(20); --- to avoid truncated values
+ UPDATE [weekly_sales_copy]
+ SET segment = 'unknown',
+    age_band = 'unknown',
+    demographic = 'unknown'
+  WHERE demographic IS NULL AND segment IS NULL AND age_band IS NULL;
+  /** it is still other row null*/
+  SELECT *
+  FROM [weekly_sales_copy];
+   UPDATE [weekly_sales_copy]
+   SET segment = 'unknown',
+    age_band = 'unknown',
+    demographic = 'unknown'
+    WHERE segment = 'null' ; -- 3024 rows affected with this query
+```
 - Generate a new `avg_transaction` column.
+```sql
+  alter table [weekly_sales_copy]
+  add   avg_transaction float;
+  UPDATE [weekly_sales_copy]
+  SET avg_transaction = ROUND(sales / transactions, 2)
+```
 
 ### 2. Data Exploration
 Answer the following questions:
 - What day of the week is used for each `week_date` value?
+  ```sql
+  SELECT  DISTINCT week_date,  DATENAME(weekday, week_date) as day_
+  FROM [weekly_sales_copy];   ---- just Monday
+  ```
 - What range of week numbers are missing from the dataset?
+```sql
+ /* In this query, we are using the master.dbo.spt_values system table, 
+ which usually contains many rows and can act as a source for generating numbers.
+ We filter the rows with type = 'P' to get a series of numbers from 0 to 2047. 
+ Then we further filter the results to get the range from 1 to 52. */
+   -- Generate a list of expected week numbers for the range of your data
+ 
+ WITH week_number_cte AS (
+ SELECT Number as week_number
+ FROM master.dbo.spt_values 
+ WHERE type = 'P'
+  AND Number BETWEEN 1 AND 52
+)  
+SELECT DISTINCT week_n.week_number
+FROM week_number_cte AS week_n 
+LEFT JOIN [weekly_sales_copy] AS s 
+  ON week_n.week_number = s.week_number
+WHERE s.week_number IS NULL;
+```
+| Missing Week Numbers |
+| ------- |
+|    1    |
+|    2    |
+|    3    |
+|    4    |
+|    5    |
+|    6    |
+|    7    |
+|    8    |
+|    9    |
+|   10    |
+|   11    |
+|   12    |
+|   37    |
+|   38    |
+|   39    |
+|   40    |
+|   41    |
+|   42    |
+|   43    |
+|   44    |
+|   45    |
+|   46    |
+|   47    |
+|   48    |
+|   49    |
+|   50    |
+|   51    |
+|   52    |
+
 - How many total transactions were there for each year in the dataset?
+```sql
+ SELECT year_number, SUM(transactions) total_transactions
+ FROM [weekly_sales_copy]
+ GROUP BY year_number;
+```
+result:
+| Year | Total_transactions |
+| ---- | ------------------ |
+| 2018 |      346,406,460   |
+| 2019 |      365,639,285   |
+| 2020 |      375,813,651   |
+
 - What is the total sales for each region for each month?
+```sql
+ALTER TABLE [weekly_sales_copy]
+ALTER COLUMN sales BIGINT; --- to avoid eroor Arithmetic overflow error converting expression to data type int
+
+ SELECT region, year_number,  month_number, sum(sales) AS TOTAL_SALES
+ FROM [weekly_sales_copy]
+GROUP BY region,  year_number, month_number
+ORDER BY region,  year_number, month_number;
+```
+result:
+| Region       | Year | Month | Total Sales    |
+|--------------|------|-------|----------------|
+| AFRICA       | 2018 | 3     | 130,542,213    |
+| AFRICA       | 2018 | 4     | 650,194,751    |
+| AFRICA       | 2018 | 5     | 522,814,997    |
+| ...          | ...  | ...   | ...            |
+| USA          | 2020 | 7     | 223,735,311    |
+| USA          | 2020 | 8     | 277,361,606    |
+
 - What is the total count of transactions for each platform?
 - What is the percentage of sales for Retail vs. Shopify for each month?
 - What is the percentage of sales by demographic for each year?
