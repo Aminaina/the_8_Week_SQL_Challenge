@@ -229,10 +229,106 @@ result:
 | USA          | 2020 | 8     | 277,361,606    |
 
 - What is the total count of transactions for each platform?
+```sql
+SELECT platform,    SUM(transactions) AS TOTAL_SALES
+ FROM [weekly_sales_copy]
+GROUP BY  platform
+ORDER BY  platform;
+```
+result:
+| Platform | Total Transactions |
+|----------|--------------------|
+| Retail   | 1,081,934,227      |
+| Shopify  | 5,925,169          |
+
 - What is the percentage of sales for Retail vs. Shopify for each month?
+```sql
+with pl_per_sales as(SELECT  month_number, platform,    SUM(sales) AS TOTAL_SALES
+FROM [weekly_sales_copy]
+GROUP BY  month_number, platform)
+SELECT  month_number,  platform,    (TOTAL_SALES / (SELECT  CONVERT(FLOAT,SUM(TOTAL_SALES))
+FROM pl_per_sales))*100
+FROM pl_per_sales
+ORDER BY  month_number;
+
+```
+result:
+| Month | Platform | Percentage of Sales |
+|-------|----------|----------------------|
+|   3   |  Shopify |      0.1423%         |
+|   3   |   Retail |      5.6431%         |
+|   4   |  Shopify |      0.4681%         |
+|   4   |   Retail |     18.9860%         |
+|   5   |   Retail |     16.1641%         |
+|   5   |  Shopify |      0.4477%         |
+|   6   |   Retail |     17.3032%         |
+|   6   |  Shopify |      0.4854%         |
+|   7   |  Shopify |      0.5258%         |
+|   7   |   Retail |     18.8694%         |
+|   8   |   Retail |     17.6505%         |
+|   8   |  Shopify |      0.5305%         |
+|   9   |   Retail |      2.7109%         |
+|   9   |  Shopify |      0.0731%         |
+
 - What is the percentage of sales by demographic for each year?
+```sql
+ with de_per_sales as( SELECT year_number, demographic, sum(sales) AS TOTAL_SALES
+FROM [weekly_sales_copy]
+GROUP BY year_number, demographic)
+SELECT year_number, demographic, (TOTAL_SALES / (SELECT  CONVERT(FLOAT,SUM(TOTAL_SALES))
+FROM de_per_sales))*100 AS  percentage_demo
+FROM de_per_sales
+ORDER BY year_number;
+```
+result:
+| year_number | demographic | percentage_demo |
+|------|-------------|----------------------|
+| 2018 |   Unknown   |      13.1786%        |
+| 2018 |  Families   |      10.1257%        |
+| 2018 |   Couples   |       8.3507%        |
+| 2019 |   Unknown   |      13.5797%        |
+| 2019 |   Couples   |       9.2021%        |
+| 2019 |  Families   |      10.9561%        |
+| 2020 |   Unknown   |      13.3427%        |
+| 2020 |  Families   |      11.3253%        |
+| 2020 |   Couples   |       9.9391%        |
+
 - Which `age_band` and `demographic` values contribute the most to Retail sales?
+```sql
+SELECT age_band , demographic, SUM(sales) Retail_sales
+FROM [weekly_sales_copy]
+GROUP BY  age_band , demographic
+order by Retail_sales desc;
+```
+result:
+| Age Band     | demographic |Retail_sales     |
+|--------------|-------------|--------------------|
+| Unknown      | Unknown     | 16,338,612,234     |
+| Retirees     | Families    | 6,750,457,132      |
+| Retirees     | Couples     | 6,531,115,070      |
+| Middle Aged  | Families    | 4,556,141,618      |
+| Young Adults | Couples     | 2,679,593,130      |
+| Middle Aged  | Couples     | 1,990,499,351      |
+| Young Adults | Families    | 1,897,215,692      |
+
 - Can we use the `avg_transaction` column to find the average transaction size for each year for Retail vs. Shopify?
+  ```sql
+   SELECT year_number,  platform,  
+   SUM(sales) / SUM(transactions) AS avg_transaction_size
+  FROM [weekly_sales_copy]
+  GROUP BY year_number,  platform
+  ORDER BY year_number,  platform;
+  ```
+result:
+|  year_number | platform | avg_transaction_size |
+|------|----------|--------------------------|
+| 2018 |  Retail  |            36            |
+| 2018 | Shopify  |           192            |
+| 2019 |  Retail  |            36            |
+| 2019 | Shopify  |           183            |
+| 2020 |  Retail  |            36            |
+| 2020 | Shopify  |           179            |
+
 
 ### 3. Before & After Analysis
 Analyze the impact of the sustainability changes introduced in June 2020:
