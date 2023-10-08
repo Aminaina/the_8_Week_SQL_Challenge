@@ -332,19 +332,323 @@ result:
 
 ### 3. Before & After Analysis
 Analyze the impact of the sustainability changes introduced in June 2020:
+```sql
+/*the week number of 2020-06-15 is 25  in 2020 so before this week it would be  before_change and other wise after_change */
+SELECT *, case when week_number < 25  AND (year_number = 2020) then 'before_change'
+          else 'after_change' end as period
+FROM [weekly_sales_copy];
+ /*  In this query, we're using the CASE statement to categorize 
+ the data into two periods: "Before Change" and "After Change" based on the week_date. */
+```
 - What is the total sales for the 4 weeks before and after 2020-06-15?
+ ```sql
+ With CTE_period as (SELECT *, case when week_number < 25  AND (year_number = 2020) then 'before_change'
+          else 'after_change' end as period
+FROM [weekly_sales_copy]) 
+ SELECT period , sum(sales) total_sales_4w
+from CTE_period
+where week_number  between  21 and  28
+AND (year_number = 2020)
+group by period ;
+```
+result:
+|    Period     | Total Sales for 4 Weeks |
+|---------------|--------------------------|
+| before_change |       2,345,878,357      |
+| after_change  |       2,318,994,169      |
+
+-What is the growth or reduction rate in actual values and percentage of sales?
+```sql
+With CTE_period as (SELECT *, case when week_number < 25  AND (year_number = 2020) then 'before_change'
+          else 'after_change' end as period
+FROM [weekly_sales_copy]) ,
+CTE_RA as (
+ SELECT period , sum(sales) total_sales_4w
+from CTE_period
+where week_number  between  21 and  28
+AND (year_number = 2020)
+group by period )
+SELECT top 1 total_sales_4w - lead(total_sales_4w) OVER (ORDER BY  period) as rate_sales, (total_sales_4w - lead(total_sales_4w) OVER (ORDER BY  period))/ 
+ convert (FLOAT, lead(total_sales_4w) OVER (ORDER BY  period) )*100 percentage_sales
+ FROM CTE_RA;
+```
+result:
+| Rate Sales | Percentage Sales |
+|------------|-------------------|
+| -26,884,188|     -1.15         |
+
 - What about the entire 12 weeks before and after?
+  ```sql
+   With CTE_period as (SELECT *, case when week_number < 25  AND (year_number = 2020)  then 'before_change'
+          else 'after_change' end as period
+  FROM [weekly_sales_copy]) ,
+  CTE_RA as (
+  SELECT period , sum(sales) total_sales_12w
+  from CTE_period
+    where week_number   between 13 and  36
+  AND (year_number = 2020)
+  group by period )
+   SELECT top 1 total_sales_12w - lead(total_sales_12w) OVER (ORDER BY  period) as rate_sales, (total_sales_12w - lead(total_sales_12w) OVER (ORDER BY  period))/ 
+  convert (FLOAT, lead(total_sales_12w) OVER (ORDER BY  period) )*100 percentage_sales
+  FROM CTE_RA;
+   ```
+ result:
+ | Rate Sales  | Percentage Sales |
+|-------------|-------------------|
+| -152,325,394|     -2.14         |
+
+These results further emphasize the negative impact of the sustainable packaging change on sales:
+
+Magnitude of Impact: The larger reduction in total sales over the 12-week period 
+compared to the 4-week period   suggests that the negative impact on sales intensified as time went on.
+
+Consistency of Impact: Both results indicate a reduction in sales, with the percentage reduction being
+higher over the 12-week period. This consistency suggests that the impact was not just a short-term fluctuation but had a more sustained effect.
+
+Confirmation of Negative Impact: The negative values for both the reduction rate and 
+the percentage reduction confirm that the sustainable packaging change had a detrimental effect on sales during the specified periods. 
+  
 - How do the sale metrics for these 2 periods compare with the previous years in 2018 and 2019?
+```sql
+ WITH CTE_period AS (
+    SELECT *, CASE WHEN week_number < 25 THEN 'before_change' ELSE 'after_change' END AS period
+    FROM [weekly_sales_copy]
+),
+CTE_RA AS (
+    SELECT
+        year_number,
+        period,
+        SUM(sales) total_sales_12w,
+        ROW_NUMBER() OVER (PARTITION BY year_number ORDER BY year_number, period) AS row_num
+    FROM CTE_period
+    WHERE week_number BETWEEN 13 AND 36
+    GROUP BY year_number, period
+),
+CTE_R AS (SELECT row_num,
+    year_number,
+    total_sales_12w - LEAD(total_sales_12w) OVER (PARTITION BY year_number ORDER BY period) AS rate_sales,
+    (total_sales_12w - LEAD(total_sales_12w) OVER (PARTITION BY year_number ORDER BY period)) / 
+    CONVERT(FLOAT, LEAD(total_sales_12w) OVER (PARTITION BY year_number ORDER BY period)) * 100 AS percentage_sales
+FROM CTE_RA)
+SELECT  year_number, rate_sales, percentage_sales
+FROM  CTE_R
+where row_num = 1;
+```
+result:
+| Year | Rate Sales   | Percentage Sales |
+|------|--------------|-------------------|
+| 2018 | 104,256,193  | 1.63          |
+| 2019 | -20,740,294  | -0.30          |
+| 2020 | -152,325,394 | -2.14          |
+comment
+Positive Trend in 2018 and 2019: Both 2018 and 2019 exhibited positive growth in sales,
+albeit at relatively modest rates. This suggests that the business was doing reasonably well and experiencing gradual growth during these years.
+
+Significant Decline in 2020: The sales metrics for 2020, however, show a starkly different pattern.
+There was a substantial reduction in sales, resulting in a negative growth rate of -1.146%.
+This negative trend strongly indicates that something impactful happened in 2020 that caused a decline in sales.
+
+Impact of Sustainable Packaging Change: Considering the context of the sustainable packaging change in 2020,
+it's reasonable to infer that this change likely contributed to the significant decline in sales during this period. 
+The sales metrics align with this hypothesis, as the negative growth observed in 2020 stands in contrast to
+the positive growth observed in the previous years.
+
+In summary, the results of the sales metrics analysis provide clear evidence that the sustainable packaging 
+change negatively impacted sales in 2020. The comparison with sales from previous years highlights
+the distinctiveness of the situation in 2020 and suggests a potential correlation between the packaging change and the observed sales decline.
 
 ### 4. Bonus Question
 Identify the areas of the business with the highest negative impact on sales metrics performance in 2020 for the 12-week before and after period:
 - Region
+  ```sql
+  WITH CTE_period AS (
+    SELECT *, CASE WHEN week_number < 25 THEN 'before_change' ELSE 'after_change' END AS period
+    FROM [weekly_sales_copy]
+),
+CTE_RA AS (
+    SELECT
+        region,
+        period,
+        SUM(sales) total_sales_12w,
+        ROW_NUMBER() OVER (PARTITION BY region ORDER BY region, period  ) AS row_num
+    FROM CTE_period
+    WHERE week_number BETWEEN 13 AND 36
+    GROUP BY region, period
+),
+CTE_R AS (SELECT row_num,
+    region,
+  (total_sales_12w - LEAD(total_sales_12w) OVER (PARTITION BY region ORDER BY period)) / 
+    CONVERT(FLOAT, LEAD(total_sales_12w) OVER (PARTITION BY region ORDER BY period)) * 100 AS percentage_sales
+FROM CTE_RA)
+SELECT  region, round(percentage_sales,2)
+FROM  CTE_R
+where row_num = 1
+order by round(percentage_sales,2)  ;
+
+  ```
+result:
+|     Region      | Percentage Sales |
+|-----------------|-------------------|
+|      ASIA       |       -1.33      |
+|     OCEANIA     |       -0.87      |
+|     CANADA      |       -0.85     |
+|       USA       |       -0.37      |
+| SOUTH AMERICA   |       -0.34      |
+|     AFRICA      |        1.10      |
+|     EUROPE      |        4.96      |
+
 - Platform
+```sql
+  WITH CTE_period AS (
+    SELECT *, CASE WHEN week_number < 25 THEN 'before_change' ELSE 'after_change' END AS period
+    FROM [weekly_sales_copy]
+    ),
+  CTE_RA AS (
+    SELECT
+         platform,
+        period,
+        SUM(sales) total_sales_12w,
+        ROW_NUMBER() OVER (PARTITION BY  platform ORDER BY  platform, period  ) AS row_num
+      FROM CTE_period
+     WHERE week_number BETWEEN 13 AND 36
+     GROUP BY  platform, period
+    ),
+   CTE_R AS (SELECT row_num,
+     platform,
+     (total_sales_12w - LEAD(total_sales_12w) OVER (PARTITION BY platform ORDER BY period)) / 
+    CONVERT(FLOAT, LEAD(total_sales_12w) OVER (PARTITION BY platform ORDER BY period)) * 100 AS percentage_sales
+   FROM CTE_RA)
+     SELECT   platform, round(percentage_sales,2) 
+    FROM  CTE_R
+   where row_num = 1
+  order by  round(percentage_sales,2)  ;
+```
+result:
+|  Platform  | Percentage Sales |
+|------------|-------------------|
+|   Retail   |      -0.59%       |
+|  Shopify   |       9.35%       |
+
 - Age_band
+  ```sql
+    WITH CTE_period AS (
+      SELECT *, CASE WHEN week_number < 25 THEN 'before_change' ELSE 'after_change' END AS period
+      FROM [weekly_sales_copy]
+      ),
+    CTE_RA AS (
+    SELECT
+           age_band,
+           period,
+           SUM(sales) total_sales_12w,
+           ROW_NUMBER() OVER (PARTITION BY  age_band ORDER BY  age_band, period  ) AS row_num
+           FROM CTE_period
+          WHERE week_number BETWEEN 13 AND 36
+         GROUP BY  age_band, period
+    ),
+     CTE_R AS (SELECT row_num,
+         age_band,
+     (total_sales_12w - LEAD(total_sales_12w) OVER (PARTITION BY age_band ORDER BY period)) / 
+      CONVERT(FLOAT, LEAD(total_sales_12w) OVER (PARTITION BY age_band ORDER BY period)) * 100 AS percentage_sales
+      FROM CTE_RA)
+       SELECT   age_band, round(percentage_sales,2) 
+       FROM  CTE_R
+      where row_num = 1
+      order by  round(percentage_sales,2);
+  ```
+result:
+|   Age Band   | Percentage Sales |
+|--------------|-------------------|
+|   Unknown    |      -0.55      |
+| Middle Aged  |      -0.22      |
+| Young Adults |      -0.21      |
+|   Retirees   |      -0.18      |
+
 - Demographic
+```sql
+     WITH CTE_period AS (
+       SELECT *, CASE WHEN week_number < 25 THEN 'before_change' ELSE 'after_change' END AS period
+     FROM [weekly_sales_copy]
+      ),
+     CTE_RA AS (
+       SELECT
+         demographic,
+        period,
+        SUM(sales) total_sales_12w,
+        ROW_NUMBER() OVER (PARTITION BY  demographic ORDER BY  demographic, period  ) AS row_num
+       FROM CTE_period
+      WHERE week_number BETWEEN 13 AND 36
+      GROUP BY  demographic, period
+        ),
+     CTE_R AS (SELECT row_num,
+       demographic,
+      (total_sales_12w - LEAD(total_sales_12w) OVER (PARTITION BY demographic ORDER BY period)) / 
+      CONVERT(FLOAT, LEAD(total_sales_12w) OVER (PARTITION BY demographic ORDER BY period)) * 100 AS percentage_sales
+      FROM CTE_RA)
+     SELECT   demographic, round(percentage_sales,2) 
+     FROM  CTE_R
+       where row_num = 1
+      order by  round(percentage_sales,2);
+```
+result:
+|  Demographic  | Percentage Sales |
+|---------------|-------------------|
+|    Unknown    |      -0.55%      |
+|    Couples    |      -0.29%      |
+|   Families    |      -0.12%      |
+
 - Customer_type
+```sql
+      WITH CTE_period AS (
+      SELECT *, CASE WHEN week_number < 25 THEN 'before_change' ELSE 'after_change' END AS period
+      FROM [weekly_sales_copy]
+       ),
+       CTE_RA AS (
+        SELECT
+          customer_type,
+          period,
+          SUM(sales) total_sales_12w,
+        ROW_NUMBER() OVER (PARTITION BY  customer_type ORDER BY  customer_type, period  ) AS row_num
+       FROM CTE_period
+       WHERE week_number BETWEEN 13 AND 36
+       GROUP BY  customer_type, period
+         ),
+     CTE_R AS (SELECT row_num,
+     customer_type,
+      (total_sales_12w - LEAD(total_sales_12w) OVER (PARTITION BY customer_type ORDER BY period)) / 
+       CONVERT(FLOAT, LEAD(total_sales_12w) OVER (PARTITION BY customer_type ORDER BY period)) * 100 AS percentage_sales
+       FROM CTE_RA)
+    SELECT    customer_type, round(percentage_sales,2) 
+   FROM  CTE_R
+    where row_num = 1
+   order by  round(percentage_sales,2);
+```
+result:
+| Customer Type | Percentage Sales |
+|---------------|-------------------|
+|   Existing    |      -0.51%      |
+|     Guest     |      -0.46%      |
+|      New      |       0.69%      |
 
 Provide recommendations and insights based on the analysis.
+age_band has the highest negative impact in sales metrics
+4.2 the recommendations based on the negative impact on sales for different age bands:
+
+Unknown Age Band: Address missing or incomplete age data to improve accuracy and better understand customer demographics.
+
+Middle Aged and Young Adults: Tailor marketing efforts and product offerings to align with preferences of these age groups, potentially boosting engagement.
+
+Retirees: Explore external factors affecting purchasing behavior among retirees and engage directly to gain insights into their needs.
+
+In-Depth Analysis: Investigate specific products, promotions, or channels that might be contributing to negative impacts within each age band.
+
+Customer Input: Collect feedback through surveys and interactions to gain qualitative insights into age group preferences and concerns.
+
+Experiment and Refine: Implement targeted strategies for each age band and closely monitor results, iterating as needed based on performance.
+
+Holistic Understanding: Analyze how age bands intersect with other dimensions to uncover potential combined influences on sales metrics.
+
+These recommendations offer actionable steps to address the challenges highlighted by the analysis, ultimately driving improved sales performance 
+across different age bands.
 
 ## Conclusion
 This case study presents a real-life change in retail operations and the impact it had on sales. Analyzing such events is essential for data analytics and provides valuable lessons for addressing similar challenges in the workplace.
