@@ -210,13 +210,13 @@ result:
 
 - What is the total sales for each region for each month?
 ```sql
-ALTER TABLE [weekly_sales_copy]
-ALTER COLUMN sales BIGINT; --- to avoid eroor Arithmetic overflow error converting expression to data type int
+    ALTER TABLE [weekly_sales_copy]
+     ALTER COLUMN sales BIGINT; --- to avoid eroor Arithmetic overflow error converting expression to data type int
 
- SELECT region, year_number,  month_number, sum(sales) AS TOTAL_SALES
- FROM [weekly_sales_copy]
-GROUP BY region,  year_number, month_number
-ORDER BY region,  year_number, month_number;
+     SELECT region, year_number,  month_number, sum(sales) AS TOTAL_SALES
+     FROM [weekly_sales_copy]
+     GROUP BY region,  year_number, month_number
+     ORDER BY region,  year_number, month_number;
 ```
 result:
 | Region       | Year | Month | Total Sales    |
@@ -440,7 +440,10 @@ result:
 | 2018 | 104,256,193  | 1.63          |
 | 2019 | -20,740,294  | -0.30          |
 | 2020 | -152,325,394 | -2.14          |
-comment
+
+
+Comment
+
 Positive Trend in 2018 and 2019: Both 2018 and 2019 exhibited positive growth in sales,
 albeit at relatively modest rates. This suggests that the business was doing reasonably well and experiencing gradual growth during these years.
 
@@ -461,11 +464,11 @@ the distinctiveness of the situation in 2020 and suggests a potential correlatio
 Identify the areas of the business with the highest negative impact on sales metrics performance in 2020 for the 12-week before and after period:
 - Region
   ```sql
-  WITH CTE_period AS (
+    WITH CTE_period AS (
     SELECT *, CASE WHEN week_number < 25 THEN 'before_change' ELSE 'after_change' END AS period
     FROM [weekly_sales_copy]
-),
-CTE_RA AS (
+       ),
+       CTE_RA AS (
     SELECT
         region,
         period,
@@ -474,16 +477,16 @@ CTE_RA AS (
     FROM CTE_period
     WHERE week_number BETWEEN 13 AND 36
     GROUP BY region, period
-),
-CTE_R AS (SELECT row_num,
-    region,
-  (total_sales_12w - LEAD(total_sales_12w) OVER (PARTITION BY region ORDER BY period)) / 
-    CONVERT(FLOAT, LEAD(total_sales_12w) OVER (PARTITION BY region ORDER BY period)) * 100 AS percentage_sales
-FROM CTE_RA)
-SELECT  region, round(percentage_sales,2)
-FROM  CTE_R
-where row_num = 1
-order by round(percentage_sales,2)  ;
+       ),
+    CTE_R AS (SELECT row_num,
+        region,
+          (total_sales_12w - LEAD(total_sales_12w) OVER (PARTITION BY region ORDER BY period)) / 
+           CONVERT(FLOAT, LEAD(total_sales_12w) OVER (PARTITION BY region ORDER BY period)) * 100 AS percentage_sales
+           FROM CTE_RA)
+    SELECT  region, round(percentage_sales,2)
+    FROM  CTE_R
+      where row_num = 1
+       order by round(percentage_sales,2)  ;
 
   ```
 result:
