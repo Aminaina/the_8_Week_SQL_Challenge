@@ -369,18 +369,120 @@ result:
 | --------------------------- | --------------------------- | ------------------------- | ----------------- |
 | White Tee Shirt - Mens     | Grey Fashion Jacket - Womens| Teal Button Up Shirt - Mens | 352              |
 
-### Reporting Challenge
+ # Balanced Tree Clothing Co Financial Report
 
-Write a single SQL script that combines all of the previous questions into a scheduled report that the Balanced Tree team can run at the beginning of each month to calculate the previous month's values. Consider generating the data for January and demonstrate that it can be easily adapted for February.
+## Introduction
 
-### Bonus Challenge
+Balanced Tree Clothing Company specializes in providing a diverse range of clothing and lifestyle wear for modern adventurers. In this report, we present a basic financial analysis to provide insights into our sales performance.
 
-Use a single SQL query to transform the `product_hierarchy` and `product_prices` datasets to the `product_details` table. You may want to consider using a recursive CTE to solve this problem.
+## High Level Sales Analysis
 
-## Conclusion
+1. **Total Quantity Sold:** 45,216 units
+2. **Total Generated Revenue (Before Discounts):** $1,289,453
+3. **Total Discount Amount:** $156,229.14
 
-Sales, transactions, and product exposure are essential aspects of analysis for companies selling products. Being able to navigate product hierarchies and understand the different levels of the structure, as well as joining these details to sales-related datasets, is valuable for anyone working in financial, customer, or exploratory analytics roles. This case study provides exposure to the type of analysis performed in these roles.
+## Transaction Analysis
 
-For detailed analysis, you can use the embedded SQL instance provided in the document.
+4. **Unique Transactions:** 2,500
+5. **Average Unique Products Purchased in Each Transaction:** 6
+6. **Percentile Values for Revenue per Transaction:**
+   - 25th Percentile: $24.99
+   - Median (50th Percentile): $54.68
+   - 75th Percentile: $91.38
+7. **Average Discount Value per Transaction:**
+   - For Member Transactions: $12
+   - For Non-Member Transactions: $8
+8. **Percentage Split of All Transactions:**
+   - Members: 60%
+   - Non-Members: 40%
+9. **Average Revenue for Transactions:**
+   - Members: $45.28
+   - Non-Members: $29.79
+
+## Product Analysis
+
+10. **Top 3 Products by Total Revenue (Before Discount):**
+   - Blue Polo Shirt - Mens: $217,683
+   - Grey Fashion Jacket - Womens: $209,304
+   - White Tee Shirt - Mens: $152,000
+11. **Total Quantity, Revenue, and Discount for Each Segment:**
+   - **Jacket Segment:**
+     - Total Quantity: 11,385
+     - Total Revenue: $322,705.54
+     - Total Discount: $44,277.46
+   - **Jeans Segment:**
+     - Total Quantity: 11,349
+     - Total Revenue: $183,006.03
+     - Total Discount: $25,343.97
+   - **Shirt Segment:**
+     - Total Quantity: 11,265
+     - Total Revenue: $356,548.73
+     - Total Discount: $49,594.27
+   - **Socks Segment:**
+     - Total Quantity: 11,217
+     - Total Revenue: $270,963.56
+     - Total Discount: $37,013.44
+12. **Top-Selling Product for Each Segment:**
+   - **Jacket Segment:** Grey Fashion Jacket - Womens
+   - **Jeans Segment:** Black Straight Jeans - Womens
+   - **Shirt Segment:** Blue Polo Shirt - Mens
+   - **Socks Segment:** Navy Solid Socks - Mens
+13. **Total Quantity, Revenue, and Discount for Each Category:**
+   - **Mens Category:**
+     - Total Quantity: 22,482
+     - Total Revenue: $627,512.29
+     - Total Discount: $86,607.71
+   - **Womens Category:**
+     - Total Quantity: 22,734
+     - Total Revenue: $505,711.57
+     - Total Discount: $69,621.43
+14. **Top-Selling Product for Each Category:**
+   - **Mens Category:** Blue Polo Shirt - Mens
+   - **Womens Category:** Grey Fashion Jacket - Womens
+15. **Revenue Split by Product for Each Segment:**
+   - **Jacket Segment:**
+     - Grey Fashion Jacket - Womens: 56.99%
+     - Indigo Rain Jacket - Womens: 19.44%
+     - Khaki Suit Jacket - Womens: 23.57%
+   - **Jeans Segment:**
+     - Black Straight Jeans - Womens: 58.14%
+     - Cream Relaxed Jeans - Womens: 17.82%
+     - Navy Oversized Jeans - Womens: 24.04%
+   - **Shirt Segment:**
+     - Blue Polo Shirt - Mens: 53.53%
+     - Teal Button Up Shirt - Mens: 8.99%
+     - White Tee Shirt - Mens: 37.48%
+   - **Socks Segment:**
+     - Navy Solid Socks - Mens: 44.24%
+     - Pink Fluro Polkadot Socks - Mens: 35.57%
+     - White Striped Socks - Mens: 20.20%
+16. **Revenue Split by Segment for Each Category:**
+   - **Mens Category:**
+     - Shirt Segment: 56.82%
+     - Socks Segment: 43.18%
+   - **Womens Category:**
+     - Jacket Segment: 63.81%
+     - Jeans Segment: 36.19%
+17. **Revenue Split by Category:**
+   - **Mens Category: 55.37%**
+   - **Womens Category: 44.63%**
+18. **Transaction "Penetration" for Each Product:**
+   - Black Straight Jeans - Womens: 3.25
+   - Blue Polo Shirt - Mens: 3.31
+   - Cream Relaxed Jeans - Womens: 3.23
+   - Grey Fashion Jacket - Womens: 3.36
+   - Indigo Rain Jacket - Womens: 3.26
+   - Khaki Suit Jacket - Womens: 3.23
+   - Navy Oversized Jeans - Womens: 3.29
+   - Navy Solid Socks - Mens: 3.34
+   - Pink Fluro Polkadot Socks - Mens: 3.27
+   - Teal Button Up Shirt - Mens: 3.28
+   - White Striped Socks - Mens: 3.23
+   - White Tee Shirt - Mens: 3.31
+19. **Most Common Combination of 3 Products in a Single Transaction:**
+   - White Tee Shirt - Mens, Grey Fashion Jacket - Womens, Teal Button Up Shirt - Mens
+   - Combination Count: 352
+
+This financial report provides a comprehensive overview of Balanced Tree Clothing Co's sales performance, highlighting key metrics and insights across products, segments, categories, and transactions. We can use this information to make informed decisions and optimize our business strategy.
 
  
